@@ -14,8 +14,12 @@
       mach-nix-wrapper = import mach-nix { inherit pkgs python; };
       requirements = builtins.readFile ./requirements.txt;
       providers = {
-        _default = "nixpkgs,sdist";
+        _default = "wheel,nixpkgs,sdist";
         "torch" = "wheel"; 
+        "pillow" = "wheel"; 
+        "pandas" = "wheel"; 
+        "numpy" = "wheel"; 
+        "opencv-python" = "wheel"; 
       };
       pythonBuild = mach-nix-wrapper.mkPython { inherit requirements providers; };
     in {

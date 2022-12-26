@@ -1,4 +1,5 @@
 numpy
 torch == 1.5.0 
-PIL
+pillow
 opencv-python
+tqdm
