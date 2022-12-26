@@ -1,0 +1,4 @@
+numpy
+torch == 1.5.0 
+PIL
+opencv-python
