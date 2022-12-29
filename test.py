@@ -84,8 +84,8 @@ noise_std = args.noise_level / 255
 loaders = dataloaders.get_dataloaders(train_path, test_path, train_path, crop_size=args.patch_size,
     batch_size=args.train_batch, downscale=args.aug_scale, concat=1,grey=True)
 
-from gray_model import ListaParams
-from gray_model import groupLista as Lista
+from model import ListaParams
+from model import groupLista as Lista
 
 params = ListaParams(kernel_size=args.kernel_size, num_filters=args.num_filters, stride=args.stride,
     unfoldings=args.unfoldings, freq=args.freq_corr_update, corr_update=args.corr_update,
@@ -123,7 +123,7 @@ l = args.kernel_size // 2
 tic = time.time()
 phase = 'test'
 print(f'\nstarting eval on test set with stride {args.stride_test}...')
-model.eval()  # Set model to evaluate mode
+model.eval()  # Set model to evaluate mode, we don't want to calculate gradients
 
 num_iters = 0
 psnr_tot = 0
@@ -145,7 +145,7 @@ axs[0].axis('off');
 axs[1].axis('off');
 plt.show();
 
-
+# Disable pytorch gradient calculations (we're in test mode)
 with torch.set_grad_enabled(False):
     params = {
         'crop_out_blocks': 0,
@@ -159,15 +159,18 @@ with torch.set_grad_enabled(False):
         'custom_pad': args.custom_pad,
         'avg': 1}
 
+    # Split input image into N separate patch, with some stride
     block = block_module(args.patch_size, stride_test, args.kernel_size, params)
     batch_noisy_blocks = block._make_blocks(noisy_batch)
     patch_loader = torch.utils.data.DataLoader(batch_noisy_blocks, batch_size=args.test_batch, drop_last=False)
-    batch_out_blocks = torch.zeros_like(batch_noisy_blocks)
 
+    # Run each patch through the neural network to denoise it
+    batch_out_blocks = torch.zeros_like(batch_noisy_blocks)
     for i, inp in enumerate(tqdm(patch_loader)):  # if it doesnt fit in memory
         id_from, id_to = i * patch_loader.batch_size, (i + 1) * patch_loader.batch_size
         batch_out_blocks[id_from:id_to] = model(inp)
 
+    # Take a mean of our blocks, recombine them into our output image
     output = block._agregate_blocks(batch_out_blocks)
     
     f, axs = plt.subplots(1, 3, constrained_layout=True);

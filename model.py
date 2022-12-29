@@ -126,6 +126,7 @@ class groupLista(nn.Module):
         N = I_col.shape[2] * I_col.shape[3]
         b,n,h,w = I_col.shape
 
+        # Calculate and subtract the mean patch
         mean_patch = I_col.mean(dim=1, keepdim=True)
         I_col -= mean_patch
         counter_lista = 0
@@ -135,17 +136,17 @@ class groupLista(nn.Module):
         lin = self.apply_A(I_col)
 
         lmbda_ = self.lmbda[0] if params.multi_lmbda else self.lmbda
-        gamma_k = thresh_fn(lin, lmbda_, similarity_map)
+        alpha_k = thresh_fn(lin, lmbda_, similarity_map)
 
         num_unfoldings = params.unfoldings
 
         for k in range(num_unfoldings - 1):
             if (k) % params.freq == 0 and k != 0:  # freq update correlation map
                 # gamma_k_corr_update = (gamma_k * self.std_g[counter_lista-1]) if (params.std_gamma) else gamma_k
-                gamma_k_corr_update = gamma_k
+                alpha_k_corr_update = alpha_k
 
                 # Update patch estimates
-                patch_estimates = self.apply_W(gamma_k_corr_update) + mean_patch
+                patch_estimates = self.apply_W(alpha_k_corr_update) + mean_patch
                 int_output = Col2Im(patch_estimates, I_size[2:], kernel_size=params.kernel_size, stride=params.stride,padding=0, avg=True, input_tensorized=True)
                 int_I_col = Im2Col(int_output,kernel_size=params.kernel_size,stride=params.stride,padding=0, tensorized=True)
                 int_I_col -= mean_patch
@@ -157,23 +158,26 @@ class groupLista(nn.Module):
                 nu_sigmoid = torch.sigmoid(self.nu[counter_lista-1])
                 similarity_map = (1-nu_sigmoid) * similarity_map + (nu_sigmoid) * similarity_map_new
 
-            x_k = self.apply_D(gamma_k)
-            res = I_col - x_k
-            r_k = self.apply_A(res)
+            # Use dictionary map to get result image from alpha_k 
+            x_k = self.apply_D(alpha_k)
+            res = I_col - x_k # Difference between result image and input
+            r_k = self.apply_A(res) # Obtain -gradient of alpha_k
 
             lmbda_ = self.lmbda[k+1]
-            # Apply thresholding
-            gamma_k = thresh_fn(gamma_k + r_k, lmbda_, similarity_map)
+            # Apply thresholding (Special proximity function for regularisation for Group Sparse Coding)
+            # This could be - (but it was trained to be the negative gradient)
+            alpha_k = thresh_fn(alpha_k + r_k, lmbda_, similarity_map)
 
             if (k%params.freq_var == 0) and (params.var_reg) :
-                output_all = self.apply_W(gamma_k)
+                output_all = self.apply_W(alpha_k)
                 output = Col2Im(output_all, I_size[2:], kernel_size=params.kernel_size, stride=params.stride, padding=0,
                                 avg=True, input_tensorized=True)
                 I_col_ = Im2Col(output, kernel_size=params.kernel_size, stride=params.stride, padding=0, tensorized=True)
                 nu = self.nu_var
-                I_col = (1 - nu) * I_col  + nu * I_col_
+                I_col = (1 - nu) * I_col + nu * I_col_
 
-        output_all = self.apply_W(gamma_k)
+        # Reconstruct output image from alpha and add back the mean patch
+        output_all = self.apply_W(alpha_k)
         output_all += mean_patch
         output = Col2Im(output_all,I_size[2:],kernel_size=params.kernel_size,stride=params.stride,padding=0, avg=True,input_tensorized=True)
 
