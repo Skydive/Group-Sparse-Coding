@@ -1,3 +1,5 @@
 .direnv
 groupsc
 groupsc/**
+
+**/__pycache__
