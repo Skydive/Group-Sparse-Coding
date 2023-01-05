@@ -1,0 +1,8 @@
+numpy
+torch == 1.13.1
+torchvision
+matplotlib
+pillow
+opencv-python
+tqdm
+tk
