@@ -49,7 +49,7 @@ parser.add_argument("--pad_block", type=str2bool, default=1)
 parser.add_argument("--pad_patch", type=str2bool, default=0)
 parser.add_argument("--no_pad", type=str2bool, default=False)
 parser.add_argument("--custom_pad", type=int, default=None)
-parser.add_argument("--testpath", type=str, default='./datasets/BSD68')
+parser.add_argument("--testpath", type=str, default='./datasets/testing')
 parser.add_argument("--testidx", type=int, default=0)
 parser.add_argument("--verbose", type=str2bool, default=0)
 
@@ -57,5 +57,7 @@ parser.add_argument("--verbose", type=str2bool, default=0)
 parser.add_argument("--nu_var", type=float, default=0.01)
 parser.add_argument("--freq_var", type=int, default=3)
 parser.add_argument("--var_reg", type=str2bool, default=False)
+
+parser.add_argument("-f", "--fff", help="a dummy argument to fool ipython", default="1")
 
 args = parser.parse_args()
