@@ -20,7 +20,7 @@
       python = "python38Full";
       pkgs = import nixpkgs { inherit system; };
       mach-nix-wrapper = import mach-nix { inherit pkgs python; };
-      requirements = builtins.readFile ./requirements.txt;
+      requirements = builtins.readFile ./requirements-flake.txt;
       providers = {
         _default = "wheel,nixpkgs,sdist";
         "torch" = "wheel"; 

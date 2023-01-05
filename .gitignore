@@ -3,3 +3,4 @@ groupsc
 groupsc/**
 
 **/__pycache__
+.venv
